@@ -30,26 +30,118 @@ def download_dataset(urls: list | set, data_dir="data"):
                 file.write(chunk)
 
     # concurrently download the files given url
-    with ThreadPoolExecutor() as exe:
+    with ThreadPoolExecutor(max_workers=5) as exe:
         exe.map(helper, urls)
 
+def charge_raw_data(datum: list | tuple, hertz: int, window_time: int, hop_time: int):
+    """
+    convert audio signals of each subject into 3D matrices to be fed
+    later to an LSTM model
+    """
+    
+    # unpack datum which is a tuple consisting of the subject
+    # name, his/her audio signals represented as a vector
+    # and the label or gender of the subject
+    subject_name = datum[0]
+    x_signals = datum[1]
+    label = datum[2]
+
+    print(subject_name)
+
+    # get number of rows of 16000hz signals 
+    n_rows = x_signals.shape[0]
+    # print(n_rows)
+
+    # we calculate the window size of each segment or the
+    # amount of samples it has to have based on the frequency
+    samples_per_win_size = int(window_time * hertz)
+    samples_per_hop_size = int(hop_time * hertz)
+    print(f"samples per window size: {samples_per_win_size}")
+    print(f"samples per hop size: {samples_per_hop_size}\n")
+
+    # initialize segments to empty list as this will store our
+    # segmented signals 
+    # subject_names = []
+    segments = []
+    labels = []
+
+    # fig = plt.figure(figsize=(17, 5))
+    n_frames = 0
+    
+    # this segments our signals into overlapping segments
+    for i in range(0, (n_rows - samples_per_win_size) + samples_per_hop_size, samples_per_hop_size):
+        # # last segment would have start x: 464000 - end x: 512000
+        # # and because 512000 plus our hop size of 16000 = 528000 
+        # # already exceeding 521216 this then terminates the loop
+        # i += samples_per_hop_size
+        # start = i
+        # end = i + samples_per_win_size
+        start = i
+        end = min((i + samples_per_win_size), n_rows)
+        # print(f'start x: {start} - end x: {end}')
+
+        # extract segment from calculated start and end
+        # indeces
+        segment = x_signals[start:end]
+        if segment.shape[0] < samples_per_win_size:
+            last_sample = segment[-1]
+
+            # (n_padding_we_want_for_the_front_of_the_array, 
+            # n_padding_we_want_for_the_back_of_the_array)
+            # 
+            n_pad_to_add = samples_per_win_size - segment.shape[0]
+            print(f"n padding to be added: {n_pad_to_add}") 
+
+            # we use the last value of the segment as padding to fill in
+            # the empty spots
+            segment = np.pad(segment, (0, n_pad_to_add), mode="constant", constant_values=last_sample)
+        
+        segments.append(segment)
+        labels.append(label)
+
+    # because x_window_list and y_window_list when converted to a numpy array will
+    # be of dimensions (m, 640) and (m,) respectively we need to first and foremost
+    # reshpae x_window_list into a 3D matrix such that it is able to be taken in
+    # by an LSTM layer, m being the number of examples, 640 being the number of time steps
+    # and 1 being the number of features which will be just our raw audio signals.    
+    X = np.array(segments)
+    subject_signals = np.reshape(X, (X.shape[0], X.shape[1], -1))
+
+    Y = np.array(labels)
+    subject_labels = np.reshape(Y, (Y.shape[0], -1))
+
+    frames = range(n_frames)
+    print(f"number of frames resulting from window size of {samples_per_win_size} \
+    and a hop size of {samples_per_hop_size} from audio signal frequency of {hertz}: {frames}")
+
+    time = librosa.frames_to_time(frames, hop_length=samples_per_hop_size)
+    print(f"shape of time calculated from number of frames: {time.shape[0]}")
+
+    return (subject_signals, subject_labels, time)
+
+def concur_load_data(dataset: list, hertz: int=16000, window_time: int=3, hop_time: int=1, config="trad"):
+    # concurrent processing
+    if config == "trad":
+        pass
+    else:
+        def helper(datum):
+            subject_signals, subject_labels, time = charge_raw_data(datum, hertz, window_time, hop_time)
+
+            return (subject_signals, subject_labels, time)
+        
+        with ThreadPoolExecutor(max_workers=5) as exe:
+            # return from this will be a list of all subjects
+            # features and labels e.g. [(subject1_features.csv, subject1_labels.csv)]
+            subjects_data = list(exe.map(helper, dataset))
+
+            # unzip subjects data and unpack
+            subjects_signals, subjects_labels, times = zip(*subjects_data)
+
+        print("subjects signals, labels, names and subject to id lookup loaded")
+        return subjects_signals, subjects_labels, times
 
 
-def extract_all_files(tar_files: list, data_dir="data"):
-    def helper(tar_file):
-        print(f"extracting {tar_file}...")
-
-        # extract tar file
-        with tarfile.open(f'./{data_dir}/{tar_file}') as tar_ref:
-            tar_ref.extractall('./data')
-
-    # concurrently download the files given url
-    with ThreadPoolExecutor() as exe:
-        exe.map(helper, tar_files)
-
-
-
-def load_labels(folders, DIR):
+def load_labels(DIR, folders):
     def helper(folder):
         try:
             file_path = os.path.join(DIR, folder, "etc", "README")
@@ -78,7 +170,7 @@ def load_labels(folders, DIR):
         except FileNotFoundError:
             return folder, "unknown"
 
-    with ThreadPoolExecutor() as exe:
+    with ThreadPoolExecutor(max_workers=5) as exe:
         subjects_labels = list(exe.map(helper, folders))
         
         
@@ -86,7 +178,7 @@ def load_labels(folders, DIR):
 
 
 
-def load_audio(DIR: str, folders: list):
+def load_audio(DIR: str, folders: list, hertz=16000):
     """
     loads audio signals from each .wav file of each subject
     """
@@ -117,7 +209,7 @@ def load_audio(DIR: str, folders: list):
                 # print(wav_path)
 
                 # each .wav file has a sampling frequency is 16000 hertz 
-                y, sr = librosa.load(wav_path)
+                y, sr = librosa.load(wav_path, sr=hertz)
                 print(f"shape of audio signals {y.shape}")
                 print(f"sampling rate of audio signals after interpolation: {sr}")
 
@@ -144,7 +236,7 @@ def load_audio(DIR: str, folders: list):
         
     # concurrently load .wav files and trim  each .wav files
     # audio signal and combine into one signal for each subject 
-    with ThreadPoolExecutor() as exe:
+    with ThreadPoolExecutor(max_workers=5) as exe:
         signals = list(exe.map(helper, folders))
         
     return signals
