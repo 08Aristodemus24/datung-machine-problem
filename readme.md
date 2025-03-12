@@ -120,6 +120,8 @@ some preset commands we can already use:
 ![alt text](<Screenshot 2025-03-12 140300.png>)
 ![alt text](<Screenshot 2025-03-12 143241.png>)
 
+15. you can run notebook visualization.ipynb to see performance metric values of the trained models 
+
 ## To implement/fix:
 1. testing/evaluation script to use saved model weights to see overall test performance of model
 2. there seems to be something wrong as the models seem to have loss go up during training and auc go down, which signifies the model may be underfitting, or not generalizing well on the training set. This may be because there aren't enough examples for the other class for the model to learn from and learns that the audio signals are mostly male voices, which we know in the dataset outweighs by large margin the female labeled audio recordings. Solution could be to gather more female recordings, and extract more features from it. Another less viable option is to undersample the male class so that it is equal to the amount of female audio signal inputs
@@ -127,3 +129,4 @@ some preset commands we can already use:
 4. learn and try tensorflow decision forest models and see if if will be better than a typical softmax regression model
 5. learn more about audio signal processing as I still don't know how to better extract features from audio signals without me fully understanding concepts like mel spectrograms, spectral centroids, etc.
 6. solving why f1 score seems to bee a numpy array instead of a single value: https://stackoverflow.com/questions/68596302/f1-score-metric-per-class-in-tensorflow
+7.  `: RESOURCE_EXHAUSTED: OOM when allocating tensor with shape[128,128] and type float on /job:localhost/replica:0/task:0/device:CPU:0 by allocator mklcpu 2025-03-12 16:17:33.380804: I tensorflow/core/framework/local_rendezvous.cc:405] Local rendezvous is aborting with status: RESOURCE_EXHAUSTED: OOM when allocating tensor with shape[256,128] and type float on /job:localhost/replica:0/task:0/device:CPU:0 by allocator mklcpu` this error may be due to the immense size of the input data which we know is (m, 2000, 1) and given we have 6815 subjects, which is incomparable to the previous project I did which only had 43 subjects at most, this preprocessing of the data for deep learning tasks, I might have to do with a better machine, or somehow interpolate the raw audio signals to a much lower frequency, which may unfortunately cause importatn features to be lost.

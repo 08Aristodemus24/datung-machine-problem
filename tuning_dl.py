@@ -502,13 +502,13 @@ if __name__ == "__main__":
     else:
         # read and load data as this will be converted to a list of 3D numpy arrays
         DIR = "./data/"
-        folders = list(filter(lambda file: not file.endswith(".tgz"), os.listdir(DIR)))[:10]
+        folders = list(filter(lambda file: not file.endswith(".tgz") and (not "_EXTRACTED_FEATURES" in file), os.listdir(DIR)))[:]
         labels = load_labels(DIR, folders)
         signals = load_audio(DIR, folders, hyper_param_config["hertz"])
 
         # convert 2 latter variables to dataframe and merge the two
         signals_df = pd.DataFrame(signals, columns=["subject_name", "raw_signals"])
-        labels_df = pd.DataFrame(labels, columns=["subject_name", "label"])
+        labels_df = pd.DataFrame(labels, columns=["subject_name", "string", "label"])
         dataset_df = signals_df.merge(labels_df, how="left", on=["subject_name"])
 
         dataset_df["label"], dataset_df_le = encode_features(dataset_df["label"])
@@ -567,7 +567,7 @@ if __name__ == "__main__":
             # following metrics would not work since all these require z to be activated by the sigmoid activation function
             # and naturally comparing Y_true which are 1's and 0's to unactivated values like 1.23, 0.28, 1.2, etc. will result
             # in 0 metric values being produced from Precision, Recall, etc.
-            'metrics': [cce_metric(), CategoricalAccuracy(), Precision(), Recall(), F1Score(), AUC(name='auc'), ]
+            'metrics': [cce_metric(), CategoricalAccuracy(), Precision(), Recall(), F1Score(average="weighted"), AUC(name='auc'), ]
         },
         'softmax': {
             'model': load_voice_softmax,
@@ -576,7 +576,7 @@ if __name__ == "__main__":
             },
             'opt': SGD,
             'loss': cce_loss(),
-            'metrics': [cce_metric(), CategoricalAccuracy(), Precision(), Recall(), F1Score(), AUC(name='auc')]
+            'metrics': [cce_metric(), CategoricalAccuracy(), Precision(), Recall(), F1Score(average="weighted"), AUC(name='auc')]
         },
     }
 

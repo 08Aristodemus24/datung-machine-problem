@@ -45,7 +45,7 @@ def charge_raw_data(datum: list | tuple, hertz: int, window_time: int, hop_time:
     # and the label or gender of the subject
     subject_name = datum[0]
     x_signals = datum[1]
-    label = datum[2]
+    label = datum[3]
 
     print(subject_name)
 

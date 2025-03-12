@@ -1,1 +1,1 @@
-{"hertz": 8000, "window_time": 0.25, "hop_time": 0.125, "n_a": 128, "dense_drop_prob": 0.2, "rnn_drop_prob": 0.2, "window_size": 2000, "hop_size": 1000, "n_units": 2}
+{"hertz": 8000, "window_time": 0.25, "hop_time": 0.125, "n_a": 128, "dense_drop_prob": 0.2, "rnn_drop_prob": 0.2, "window_size": 2000, "hop_size": 1000, "n_units": 3}
