@@ -114,11 +114,11 @@ some preset commands we can already use:
 - `python tuning_dl.py -m softmax -c trad -lr 1e-3 --batch_size 256 --mode training --hyper_param_list hertz_8000 window_time_0.25 hop_time_0.125` to train a softmax regression model which will use the engineered features we have
 
 14. screenshot of extracted features: 
-![dataframes](/figures%20&%20images/Screenshot 2025-03-12 140242.png)
-![dataframes](/figures%20&%20images/Screenshot 2025-03-12 143231.png>)
+![dataframes](figures%20&%20images/Screenshot 2025-03-12 140242.png)
+![dataframes](figures%20&%20images/Screenshot 2025-03-12 143231.png>)
 15. screenshot of labels: 
-![dataframes](/figures%20&%20images/Screenshot 2025-03-12 140300.png>)
-![dataframes](/figures%20&%20images/Screenshot 2025-03-12 143241.png>)
+![dataframes](figures%20&%20images/Screenshot 2025-03-12 140300.png>)
+![dataframes](figures%20&%20images/Screenshot 2025-03-12 143241.png>)
 
 15. you can run notebook visualization.ipynb to see performance metric values of the trained models 
 
