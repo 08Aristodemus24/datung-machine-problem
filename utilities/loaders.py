@@ -4,6 +4,7 @@ import tarfile
 import os
 import librosa
 import numpy as np
+import pandas as pd
 import re
 import pickle
 import json
@@ -119,10 +120,14 @@ def charge_raw_data(datum: list | tuple, hertz: int, window_time: int, hop_time:
 
     return (subject_signals, subject_labels, time)
 
-def concur_load_data(dataset: list, hertz: int=16000, window_time: int=3, hop_time: int=1, config="trad"):
+def concur_load_data(dataset: list | str, hertz: int=16000, window_time: int=3, hop_time: int=1, config="trad"):
     # concurrent processing
     if config == "trad":
-        pass
+        split = dataset.lower()
+        subjects_features = pd.read_csv(f"./data/_EXTRACTED_FEATURES/{split}_features_merged.csv", index_col=0)
+        subjects_labels = pd.read_csv(f"./data/_EXTRACTED_FEATURES/{split}_labels_merged.csv", index_col=0)
+        
+        return subjects_features, subjects_labels, None
     else:
         def helper(datum):
             subject_signals, subject_labels, time = charge_raw_data(datum, hertz, window_time, hop_time)
@@ -153,22 +158,23 @@ def load_labels(DIR, folders):
 
             # extract only the gender of the subject in meta data
             # print(lines[0].lower())
-            string = re.search(r"(male|female|weiblich|männlich|unknown)", lines[0].lower())
-            # print(string)
+            string = re.sub(r"(gender)", "", lines[0].lower())
+            string = re.sub(r"[:;\[\]\t\n\s]", "", string)
+
             if string:
-                gender = string[0]
-                if (gender == "male" or gender == "männlich"):
-                    return folder, "male"
-                elif (gender == "female" or gender == "weiblich"):
-                    return folder, "female"
+                gender = string
+                if gender.startswith("ma") or gender.startswith("mä"):
+                    return folder, string, "male"
+                elif gender.startswith("fem") or gender.startswith("wei"):
+                    return folder, string, "female"
                 else:
-                    return folder, "unknown"
+                    return folder, string, "unknown"
             
         except IndexError:
-            return folder, "unknown"
+            return folder, "unknown", "unknown"
         
         except FileNotFoundError:
-            return folder, "unknown"
+            return folder, "unknown", "unknown"
 
     with ThreadPoolExecutor(max_workers=5) as exe:
         subjects_labels = list(exe.map(helper, folders))

@@ -3,9 +3,11 @@ import pandas as pd
 import librosa
 import librosa.display
 import matplotlib.pyplot as plt
+import os
 
 from concurrent.futures import ThreadPoolExecutor
 from scipy.stats import kurtosis as kurt, skew, entropy, mode 
+from sklearn.preprocessing import MinMaxScaler
 
 def extract_features(dataset: list, hertz: int=16000, window_time: int=3, hop_time: int=1, config="trad"):
     """
@@ -14,11 +16,11 @@ def extract_features(dataset: list, hertz: int=16000, window_time: int=3, hop_ti
     
     def helper(datum):
         # we access the SCR values via raw data column
-        subject_name = datum[0]
+        name = datum[0]
         x_signals = datum[1]
         label = datum[2]
 
-        print(subject_name)
+        print(name)
 
         # get number of rows of 16000hz signals 
         n_rows = x_signals.shape[0]
@@ -33,7 +35,7 @@ def extract_features(dataset: list, hertz: int=16000, window_time: int=3, hop_ti
 
         # initialize segments to empty list as this will store our
         # segmented signals 
-        # subject_names = []
+        # names = []
         segments = []
         labels = []
 
@@ -130,6 +132,7 @@ def extract_features(dataset: list, hertz: int=16000, window_time: int=3, hop_ti
                 "peak_frequency": peak_frequency,
             }
             
+            # names.append(name)
             segments.append(features)
             labels.append(label)
             
@@ -166,27 +169,33 @@ def extract_features(dataset: list, hertz: int=16000, window_time: int=3, hop_ti
         variance_mel = variance_mel.reshape(-1)[:-mean_mel_n_values_to_rem]
         spect_cent = spect_cent.reshape(-1)[:-spect_cent_n_values_to_rem]
 
+        # create features dataframe
         subject_features = pd.DataFrame.from_records(segments)
         subject_features["zcr"] = zcr
         subject_features["mean_mel"] = mean_mel
         subject_features["variance_mel"] = variance_mel
         subject_features["spect_cent"] = spect_cent
         
+        # create labels dataframe
         subject_labels = pd.Series(labels)
+        # subject_names = pd.Series(names)
 
-        
+        # scale features before saving
+        feature_columns = subject_features.columns
+        scaler = MinMaxScaler()
+        subject_features_normed = scaler.fit_transform(subject_features)
+        subject_features = pd.DataFrame(subject_features_normed, columns=feature_columns)
 
-        # librosa.display.waveshow(x_signals, alpha=0.5, color="lightgreen")
-        # plt.plot(time, subject_features["rms"], color="blue")
-        # plt.tight_layout()
-        # plt.show()
+        os.makedirs("./data/_EXTRACTED_FEATURES/", exist_ok=True)
+        subject_features.to_csv(f'./data/_EXTRACTED_FEATURES/{name}_subject_features.csv')
+        subject_labels.to_csv(f'./data/_EXTRACTED_FEATURES/{name}_subject_labels.csv')
 
-        return (subject_features, subject_labels, time)
+        # return (subject_features, subject_labels, subject_names, time)
 
     with ThreadPoolExecutor() as exe: 
         subjects_data = list(exe.map(helper, dataset))
 
-        # unzip subjects data and unpack
-        subjects_features, subjects_labels, time = zip(*subjects_data)
+    #     # unzip subjects data and unpack
+    #     subjects_features, subjects_labels, subjects_names, time = zip(*subjects_data)
     
-    return subjects_features, subjects_labels, time
+    # return subjects_features, subjects_labels, subjects_names, time

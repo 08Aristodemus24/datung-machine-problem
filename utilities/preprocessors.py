@@ -19,6 +19,8 @@ def encode_features(X):
     encoder is saved and later used)
     """
 
+    
     enc = LabelEncoder() if len(X.shape) < 2 else OrdinalEncoder(dtype=np.int64)
+    print(enc)
     enc_feats = enc.fit_transform(X)
     return enc_feats, enc

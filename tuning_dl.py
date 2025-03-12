@@ -309,8 +309,8 @@ def grid_search_cv(subjects_signals: list[np.ndarray],
 
 
 # for training phase
-def train_final_estimator(train_subjects_signals: list[np.ndarray],
-    train_subjects_labels: list[np.ndarray],
+def train_final_estimator(X,
+    Y,
     alpha: float,
     opt: tf.keras.Optimizer,
     loss: tf.keras.Loss,
@@ -336,35 +336,13 @@ def train_final_estimator(train_subjects_signals: list[np.ndarray],
         estimator - 
         hyper_param_config - 
     """
-    # split signal data into training and cross validation
-    # as cross validation will be needed in case of early stopping
-    # i.e. if validation metrics do not improve anymore as training
-    # progresses 
     
-    print(f'train_subjects_signals length: {len(train_subjects_signals)}')
-    print(f'train_subjects_labels length: {len(train_subjects_labels)}')
-
-    # concatenate both train  lists of
-    # signal and label numpy arrays into a single 
-    # combined training dataset
-    X_trains = np.concatenate(train_subjects_signals, axis=0)
-    Y_trains = np.concatenate(train_subjects_labels, axis=0)
-    unique = np.unique(Y_trains)
-    Y_trains_one_hot = tf.one_hot(Y_trains.reshape(-1), depth=len(unique))
-    
-    # reset value of n_units hyper param
-    hyper_param_config["n_units"] = len(unique)
-
-    print(X_trains.shape)
-    print(Y_trains_one_hot.shape)
-
     # # this would be appropriate if there was a larger ram
     # # min max scale training data and scale cross validation
     # # data based on scaler scaled on training data
     # scaler = MinMaxScaler()
-    # X_trains = scaler.fit_transform(X_trains)
-    # X_cross = scaler.transform(X_cross)
-    # save_model(scaler, f'./saved/misc/{selector_config}_{estimator_name}_scaler.pkl')
+    # X = scaler.fit_transform(X)
+    # save_model(scaler, f'./saved/misc/{estimator_name}_scaler.pkl')
 
     # create model with specific hyper param configurations
     model = estimator(**hyper_param_config)
@@ -404,7 +382,7 @@ def train_final_estimator(train_subjects_signals: list[np.ndarray],
     # begin training final model, without validation data
     # as all data combining training and validation will all be used
     # in order to increase model generalization on test data
-    history = model.fit(X_trains, Y_trains_one_hot, 
+    history = model.fit(X, Y, 
     epochs=training_epochs,
     batch_size=batch_size, 
     callbacks=callbacks,
@@ -426,9 +404,9 @@ def create_hyper_param_config(hyper_param_list: list[str]):
     """
 
     hyper_param_config = {}
-    
     for hyper_param in hyper_param_list:
         try:
+            print(hyper_param)
             # extract hyper param name and strip its last occuring underscore
             # extract hyper param value and convert to 
             # appropriate data type using literal evaluator
@@ -441,10 +419,11 @@ def create_hyper_param_config(hyper_param_list: list[str]):
         finally:
             print(type(hyper_param_config[key]))
 
-    # add window size and hop size for lstm or softmax 
-    # models to take in as kwargs
-    hyper_param_config["window_size"] = int(hyper_param_config["window_time"] * hyper_param_config["hertz"])
-    hyper_param_config["hop_size"] = int(hyper_param_config["hop_time"] * hyper_param_config["hertz"])
+    if len(hyper_param_list) > 1:
+        # add window size and hop size for lstm or softmax 
+        # models to take in as kwargs
+        hyper_param_config["window_size"] = int(hyper_param_config["window_time"] * hyper_param_config["hertz"])
+        hyper_param_config["hop_size"] = int(hyper_param_config["hop_time"] * hyper_param_config["hertz"])
     
     return hyper_param_config
 
@@ -463,7 +442,7 @@ if __name__ == "__main__":
     parser.add_argument("-bs", "--batch_size", type=int, default=512, help="batch size during model training")
     parser.add_argument("--mode", type=str, default="tuning", help="tuning mode will not save weights during \
         fitting and while in training mode saves weights")
-    parser.add_argument("--hyper_param_list", type=str, default="window_time_0.5", nargs="+", help="list of hyper parameters to be used as configuration during training")
+    parser.add_argument("--hyper_param_list", type=str, default=["window_time_0.5"], nargs="+", help="list of hyper parameters to be used as configuration during training")
     args = parser.parse_args()
 
     # # there are 16000 samples per second originally but
@@ -485,38 +464,79 @@ if __name__ == "__main__":
     hyper_param_config = create_hyper_param_config(hyper_param_list=args.hyper_param_list)
     print(hyper_param_config)
 
-    # read and load data
-    # will be a list of 3D numpy arrays
-    DIR = "./data/"
-    folders = list(filter(lambda file: not file.endswith(".tgz"), os.listdir(DIR)))[:10]
-    labels = load_labels(DIR, folders)
-    signals = load_audio(DIR, folders, hyper_param_config["hertz"])
+    # this is if user decides to use csv files of already extracted
+    # features, there will be no need to concurrently load audios and labels
+    if args.config == "trad":
+        data_loader_kwargs = {
+            "dataset": "train",
+            "config": args.config
+        }
 
-    # convert 2 latter variables to dataframe and merge the two
-    signals_df = pd.DataFrame(signals, columns=["subject_name", "raw_signals"])
-    labels_df = pd.DataFrame(labels, columns=["subject_name", "label"])
-    dataset_df = signals_df.merge(labels_df, how="left", on=["subject_name"])
+        # load dataframes
+        train_subjects_features, train_subjects_labels, _ = concur_load_data(**data_loader_kwargs)
+        print(train_subjects_labels["0"].value_counts())
+        
+        # provide n_features kwarg to be used by softmax or any other ml model
+        hyper_param_config["n_features"] = train_subjects_features.shape[1]
 
-    dataset_df["label"], dataset_df_le = encode_features(dataset_df["label"])
-    save_model(dataset_df_le, './saved/misc/audio_dataset_le.pkl')
+        X = train_subjects_features.to_numpy()
+        Y_sparse = train_subjects_labels["0"].to_numpy()
+        unique = np.unique(Y_sparse)
 
-    # split dataset
-    train_dataset_df, test_dataset_df = train_test_split(dataset_df, test_size=0.2, random_state=0)
+        # set value of n_units hyper param
+        hyper_param_config["n_units"] = len(unique)
 
-    # convert split data to lists
-    train_dataset = list(train_dataset_df.itertuples(index=False, name=None))
-    test_dataset = list(test_dataset_df.itertuples(index=False, name=None))
+        # one hot encode train_subjects_labels
+        Y = tf.one_hot(Y_sparse.reshape(-1), depth=len(unique))
 
-    # load training data concurrently
-    train_subjects_signals, train_subjects_labels, times  = concur_load_data(
-        train_dataset, 
-        hertz=hyper_param_config["hertz"], 
-        window_time=hyper_param_config["window_time"], 
-        hop_time=hyper_param_config["hop_time"], 
-        config="deep")
-    print(train_subjects_signals[0].shape)
+    else:
+        # read and load data as this will be converted to a list of 3D numpy arrays
+        DIR = "./data/"
+        folders = list(filter(lambda file: not file.endswith(".tgz"), os.listdir(DIR)))[:10]
+        labels = load_labels(DIR, folders)
+        signals = load_audio(DIR, folders, hyper_param_config["hertz"])
 
-    # one hot encode train_subjects_labels
+        # convert 2 latter variables to dataframe and merge the two
+        signals_df = pd.DataFrame(signals, columns=["subject_name", "raw_signals"])
+        labels_df = pd.DataFrame(labels, columns=["subject_name", "label"])
+        dataset_df = signals_df.merge(labels_df, how="left", on=["subject_name"])
+
+        dataset_df["label"], dataset_df_le = encode_features(dataset_df["label"])
+        save_model(dataset_df_le, './saved/misc/audio_dataset_le.pkl')
+
+        # split dataset
+        train_dataset_df, test_dataset_df = train_test_split(dataset_df, test_size=0.2, random_state=0)
+
+        # convert split data to lists
+        train_dataset = list(train_dataset_df.itertuples(index=False, name=None))
+        test_dataset = list(test_dataset_df.itertuples(index=False, name=None))
+
+        data_loader_kwargs = {
+            "dataset": train_dataset,
+            "hertz": hyper_param_config["hertz"],
+            "window_time": hyper_param_config["window_time"], 
+            "hop_time": hyper_param_config["hop_time"], 
+            "config": args.config
+        }
+
+        # load training data concurrently
+        train_subjects_signals, train_subjects_labels, times  = concur_load_data(**data_loader_kwargs)
+        print(train_subjects_signals[0].shape)
+
+        # concatenate both train  lists of
+        # signal and label numpy arrays into a single 
+        # combined training dataset
+        X = np.concatenate(train_subjects_signals, axis=0)
+        Y_sparse = np.concatenate(train_subjects_labels, axis=0)
+        unique = np.unique(Y_sparse)
+
+        # set value of n_units hyper param
+        hyper_param_config["n_units"] = len(unique)
+
+        # one hot encode train_subjects_labels
+        Y = tf.one_hot(Y_sparse.reshape(-1), depth=len(unique))
+
+    
 
 
 
@@ -573,22 +593,23 @@ if __name__ == "__main__":
 
     elif args.mode.lower() == "training":
         
-        # we can just modify this script such that it doesn't loop through hyper param configs anymore and
-        # will just only now 1. load the preprocessed features, load the reduced feature set, 
-        # exclude use of grid serach loso cv, loso cross validation, and leave one subject out
-        # and instead use the best hyper param config obtained from summarization.ipynb and train the model
-        # not on a specific fold or set of subjects but all subjects
-        train_final_estimator(
-            train_subjects_signals,
-            train_subjects_labels, 
-            alpha=args.learning_rate,
-            opt=models[args.model]['opt'],
-            loss=models[args.model]['loss'],
-            metrics=models[args.model]['metrics'],
-            threshold_epochs=args.threshold_epochs,
-            training_epochs=args.training_epochs,
-            batch_size=args.batch_size,
-            estimator_name=args.model,
-            estimator=models[args.model]['model'],
-            hyper_param_config=hyper_param_config
-        )
+        # # we can just modify this script such that it doesn't loop through hyper param configs anymore and
+        # # will just only now 1. load the preprocessed features, load the reduced feature set, 
+        # # exclude use of grid serach loso cv, loso cross validation, and leave one subject out
+        # # and instead use the best hyper param config obtained from summarization.ipynb and train the model
+        # # not on a specific fold or set of subjects but all subjects
+        # train_final_estimator(
+        #     X,
+        #     Y, 
+        #     alpha=args.learning_rate,
+        #     opt=models[args.model]['opt'],
+        #     loss=models[args.model]['loss'],
+        #     metrics=models[args.model]['metrics'],
+        #     threshold_epochs=args.threshold_epochs,
+        #     training_epochs=args.training_epochs,
+        #     batch_size=args.batch_size,
+        #     estimator_name=args.model,
+        #     estimator=models[args.model]['model'],
+        #     hyper_param_config=hyper_param_config
+        # )
+        pass
