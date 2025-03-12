@@ -115,7 +115,7 @@ some preset commands we can already use:
 
 14. screenshot of extracted features: 
 ![dataframes]("https://github.com/08Aristodemus24/08Aristodemus24/blob/master/figures%20&%20images/Screenshot 2025-03-12 140242.png")
-![dataframes](./figures%20&%20images/Screenshot 2025-03-12 143231.png)
+![dataframes](./figures%20&%20images/Screenshot%202025-03-12%20140242.png)
 15. screenshot of labels: 
 ![dataframes](./figures%20&%20images/Screenshot 2025-03-12 140300.png)
 
