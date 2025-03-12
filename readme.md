@@ -114,10 +114,11 @@ some preset commands we can already use:
 - `python tuning_dl.py -m softmax -c trad -lr 1e-3 --batch_size 256 --mode training --hyper_param_list hertz_8000 window_time_0.25 hop_time_0.125` to train a softmax regression model which will use the engineered features we have
 
 14. screenshot of extracted features: 
-![dataframes]("https://github.com/08Aristodemus24/08Aristodemus24/blob/master/figures%20&%20images/Screenshot 2025-03-12 140242.png")
+![dataframes](./figures%20&%20images/Screenshot%202025-03-12%20143231.png)
 ![dataframes](./figures%20&%20images/Screenshot%202025-03-12%20140242.png)
 15. screenshot of labels: 
-![dataframes](./figures%20&%20images/Screenshot 2025-03-12 140300.png)
+![dataframes](./figures%20&%20images/Screenshot%202025-03-12%20143241.png)
+![dataframes](./figures%20&%20images/Screenshot%202025-03-12%20140300.png)
 
 
 15. you can run notebook visualization.ipynb to see performance metric values of the trained models 
@@ -130,3 +131,22 @@ some preset commands we can already use:
 5. learn more about audio signal processing as I still don't know how to better extract features from audio signals without me fully understanding concepts like mel spectrograms, spectral centroids, etc.
 6. solving why f1 score seems to bee a numpy array instead of a single value: https://stackoverflow.com/questions/68596302/f1-score-metric-per-class-in-tensorflow
 7.  `: RESOURCE_EXHAUSTED: OOM when allocating tensor with shape[128,128] and type float on /job:localhost/replica:0/task:0/device:CPU:0 by allocator mklcpu 2025-03-12 16:17:33.380804: I tensorflow/core/framework/local_rendezvous.cc:405] Local rendezvous is aborting with status: RESOURCE_EXHAUSTED: OOM when allocating tensor with shape[256,128] and type float on /job:localhost/replica:0/task:0/device:CPU:0 by allocator mklcpu` this error may be due to the immense size of the input data which we know is (m, 2000, 1) and given we have 6815 subjects, which is incomparable to the previous project I did which only had 43 subjects at most, this preprocessing of the data for deep learning tasks, I might have to do with a better machine, or somehow interpolate the raw audio signals to a much lower frequency, which may unfortunately cause importatn features to be lost.
+
+## Figures:
+* distribution of classes across 6318 subjects
+![dataframes](./figures%20&%20images/male%20to%20female%20ratio.png)
+
+* root mean squared energy feature of sample subject
+![dataframes](./figures%20&%20images/root%20mean%20squared%20energy.png)
+
+* mel frequency mean feature of sample subject
+![dataframes](./figures%20&%20images/mel%20frequency%20mean%20feature.png)
+
+* mel frequency variance feature of sample subject
+![dataframes](./figures%20&%20images/mel%20frequency%20variance%20feature.png)
+
+* spectral centroid feature of sample subject
+![dataframes](./figures%20&%20images/spectral%20centroid%20feature.png)
+
+* zero crossing rate feature of sample subject
+![dataframes](./figures%20&%20images/zero%20crossing%20rate%20feature.png)
