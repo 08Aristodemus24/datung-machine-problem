@@ -150,3 +150,24 @@ some preset commands we can already use:
 
 * zero crossing rate feature of sample subject
 ![dataframes](./figures%20&%20images/zero%20crossing%20rate%20feature.png)
+
+* softmax auc metric value
+![dataframes](./figures%20&%20images/model%20performance%20using%20gendered%20audio%20recordings%20dataset%20for%20auc%20metric.png)
+
+* softmax categorical accuracy metric value
+![dataframes](./figures%20&%20images/model%20performance%20using%20gendered%20audio%20recordings%20dataset%20for%20categorical_accuracy%20metric.png)
+
+* softmax categorical cross entropy metric value
+![dataframes](./figures%20&%20images/model%20performance%20using%20gendered%20audio%20recordings%20dataset%20for%20categorical_crossentropy%20metric.png)
+
+* softmax loss metric value
+![dataframes](./figures%20&%20images/model%20performance%20using%20gendered%20audio%20recordings%20dataset%20for%20loss%20metric.png)
+
+* softmax precision metric value
+![dataframes](./figures%20&%20images/model%20performance%20using%20gendered%20audio%20recordings%20dataset%20for%20precision_1%20metric.png)
+
+* softmax recall metric value
+![dataframes](./figures%20&%20images/model%20performance%20using%20gendered%20audio%20recordings%20dataset%20for%20recall_1%20metric.png)
+
+* softmax f1 metric value
+![dataframes](./figures%20&%20images/model%20performance%20using%20gendered%20audio%20recordings%20dataset%20for%20f1_score%20metric.png)

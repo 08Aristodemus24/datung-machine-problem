@@ -170,10 +170,11 @@ class ModelResults:
             ('>:', '#6902e6'),
             ('p-', '#c005e6'),
             ('h--', '#fa69a3'),
-            ('o:', '#240511'),
-            ('x-', '#052224'),
-            ('+--', '#402708'),
-            ('8:', '#000000')]
+            ('+--', '#e36c27'),
+            ('8:', '#8442f5'),
+            ('o:', '#56e327'),
+            ('x-', '#c41ac4'),
+        ]
 
         for index, (key, value) in enumerate(results.items()):
             # value contains the array of metric values over epochs
@@ -190,8 +191,8 @@ class ModelResults:
                     color=styles[curr_metrics_indeces[index]][1], 
                     alpha=0.5, 
                     label=key, 
-                    markersize=10, 
-                    linewidth=3)
+                    markersize=5, 
+                    linewidth=1.5)
             else:
                 # here if the metric value is not hte loss or 
                 # validation loss each element is rounded by 2 
@@ -205,19 +206,21 @@ class ModelResults:
                     metric_perc, 
                     styles[curr_metrics_indeces[index]][0], 
                     color=styles[curr_metrics_indeces[index]][1], 
-                    alpha=0.5, 
+                    alpha=0.75, 
                     label=key, 
-                    markersize=10, 
-                    linewidth=3)
+                    markersize=5, 
+                    linewidth=1.5)
 
         # annotate end of lines
         for index, (key, value) in enumerate(results.items()):        
+            annot_color = "white" if self.style == "dark" else "black"
             if key == "loss" or key == "val_loss":
                 last_loss_rounded = round(value[-1], 2)
-                axis.annotate(last_loss_rounded, xy=(epochs[-1], value[-1]), color='black', alpha=1)
+                
+                axis.annotate(last_loss_rounded, xy=(epochs[-1], value[-1]), color=annot_color, alpha=1)
             else: 
                 last_metric_perc = round(value[-1] * 100, 2)
-                axis.annotate(last_metric_perc, xy=(epochs[-1], value[-1] * 100), color='black', alpha=1)
+                axis.annotate(last_metric_perc, xy=(epochs[-1], value[-1] * 100), color=annot_color, alpha=1)
 
         axis.set_ylabel('metric value', )
         axis.set_xlabel('epochs', )
