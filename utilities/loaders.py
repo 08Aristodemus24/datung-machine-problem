@@ -120,13 +120,37 @@ def charge_raw_data(datum: list | tuple, hertz: int, window_time: int, hop_time:
 
     return (subject_signals, subject_labels, time)
 
-def concur_load_data(dataset: list | str, hertz: int=16000, window_time: int=3, hop_time: int=1, config="trad"):
+def concur_load_data(dataset: list, split: str="train", hertz: int=16000, window_time: int=3, hop_time: int=1, config="trad"):
     # concurrent processing
     if config == "trad":
-        split = dataset.lower()
-        subjects_features = pd.read_csv(f"./data/_EXTRACTED_FEATURES/{split}_features_merged.csv", index_col=0)
-        subjects_labels = pd.read_csv(f"./data/_EXTRACTED_FEATURES/{split}_labels_merged.csv", index_col=0)
-        
+        # define directory where to load featurse and labels
+        split = split.lower()
+        DIR = f"./data/_EXTRACTED_FEATURES/{split}/"
+
+        # list all .csv features and .csv labels in directory
+        names = list(set([re.sub(r"_features.csv|_labels.csv", "", file) for file in os.listdir(DIR)]))
+
+        def helper(name):
+            # read csv files
+            subject_features = pd.read_csv(f"./data/_EXTRACTED_FEATURES/{split}/{name}_features.csv", index_col=0)
+            subject_labels = pd.read_csv(f"./data/_EXTRACTED_FEATURES/{split}/{name}_labels.csv", index_col=0)
+            
+            # # scale features before saving
+            # feature_columns = subject_features.columns
+            # scaler = StandardScaler()
+            # subject_features_normed = scaler.fit_transform(subject_features)
+            # subject_features = pd.DataFrame(subject_features_normed, columns=feature_columns)
+
+            return subject_features, subject_labels
+
+        with ThreadPoolExecutor(max_workers=5) as exe:
+            # return from this will be a list of all subjects
+            # features and labels e.g. [(subject1_features.csv, subject1_labels.csv)]
+            subjects_data = list(exe.map(helper, names))
+
+            # unzip subjects data and unpack
+            subjects_features, subjects_labels = zip(*subjects_data)
+
         return subjects_features, subjects_labels, None
     else:
         def helper(datum):

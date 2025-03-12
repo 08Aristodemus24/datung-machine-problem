@@ -7,9 +7,9 @@ import os
 
 from concurrent.futures import ThreadPoolExecutor
 from scipy.stats import kurtosis as kurt, skew, entropy, mode 
-from sklearn.preprocessing import MinMaxScaler
+from sklearn.preprocessing import MinMaxScaler, StandardScaler
 
-def extract_features(dataset: list, hertz: int=16000, window_time: int=3, hop_time: int=1, config="trad"):
+def extract_features(dataset: list, split: str="train", hertz: int=16000, window_time: int=3, hop_time: int=1, config="trad"):
     """
     extracts the features from each segment of an audio signal
     """
@@ -18,7 +18,7 @@ def extract_features(dataset: list, hertz: int=16000, window_time: int=3, hop_ti
         # we access the SCR values via raw data column
         name = datum[0]
         x_signals = datum[1]
-        label = datum[2]
+        label = datum[3]
 
         print(name)
 
@@ -35,7 +35,6 @@ def extract_features(dataset: list, hertz: int=16000, window_time: int=3, hop_ti
 
         # initialize segments to empty list as this will store our
         # segmented signals 
-        # names = []
         segments = []
         labels = []
 
@@ -58,34 +57,34 @@ def extract_features(dataset: list, hertz: int=16000, window_time: int=3, hop_ti
             # indeces
             segment = x_signals[start:end]
 
-            # calculate frequency domain features
-            # get the spectrogram by calculating short time fourier transform
-            spectrogram = np.abs(librosa.stft(segment))
-            # print(f"spectrogram shape: {spectrogram.shape}")
+            # # calculate frequency domain features
+            # # get the spectrogram by calculating short time fourier transform
+            # spectrogram = np.abs(librosa.stft(segment))
+            # # print(f"spectrogram shape: {spectrogram.shape}")
 
-            # Get the frequencies corresponding to the spectrogram bins
-            frequencies = librosa.fft_frequencies(sr=hertz)
-            # print(f"frequencies shape: {frequencies.shape}")
+            # # Get the frequencies corresponding to the spectrogram bins
+            # frequencies = librosa.fft_frequencies(sr=hertz)
+            # # print(f"frequencies shape: {frequencies.shape}")
 
-            # Find the frequency bin with the highest average energy
-            peak_frequency_bin = np.argmax(np.mean(spectrogram, axis=1))
+            # # Find the frequency bin with the highest average energy
+            # peak_frequency_bin = np.argmax(np.mean(spectrogram, axis=1))
 
-            # Get the peak frequency in Hz
-            # calculate also peak frequency
-            # I think dito na gagamit ng fast fourier transform
-            # to obtain the frequency, or use some sort of function
-            # to convert the raw audio signals into a spectogram
-            peak_frequency = frequencies[peak_frequency_bin]
+            # # Get the peak frequency in Hz
+            # # calculate also peak frequency
+            # # I think dito na gagamit ng fast fourier transform
+            # # to obtain the frequency, or use some sort of function
+            # # to convert the raw audio signals into a spectogram
+            # peak_frequency = frequencies[peak_frequency_bin]
 
-            # calculate the segments fast fourier transform
-            ft = np.fft.fft(segment)
+            # # calculate the segments fast fourier transform
+            # ft = np.fft.fft(segment)
 
-            # the fft vector can have negative or positive values
-            # so to avoid negative values and just truly see the frequencies
-            # of each segment we use its absolute values instead 
-            magnitude = np.abs(ft)
-            mag_len = magnitude.shape[0]
-            frequency = np.linspace(0, hertz, mag_len)
+            # # the fft vector can have negative or positive values
+            # # so to avoid negative values and just truly see the frequencies
+            # # of each segment we use its absolute values instead 
+            # magnitude = np.abs(ft)
+            # mag_len = magnitude.shape[0]
+            # frequency = np.linspace(0, hertz, mag_len)
 
             # calculate statistical features
             # because the frequency for each segment is 16000hz we can divide
@@ -129,10 +128,9 @@ def extract_features(dataset: list, hertz: int=16000, window_time: int=3, hop_ti
                 "rms": rms,
                 
                 # frequency features
-                "peak_frequency": peak_frequency,
+                # "peak_frequency": peak_frequency,
             }
             
-            # names.append(name)
             segments.append(features)
             labels.append(label)
             
@@ -178,24 +176,17 @@ def extract_features(dataset: list, hertz: int=16000, window_time: int=3, hop_ti
         
         # create labels dataframe
         subject_labels = pd.Series(labels)
-        # subject_names = pd.Series(names)
 
-        # scale features before saving
-        feature_columns = subject_features.columns
-        scaler = MinMaxScaler()
-        subject_features_normed = scaler.fit_transform(subject_features)
-        subject_features = pd.DataFrame(subject_features_normed, columns=feature_columns)
+        os.makedirs(f"./data/_EXTRACTED_FEATURES/{split}", exist_ok=True)
+        subject_features.to_csv(f'./data/_EXTRACTED_FEATURES/{split}/{name}_features.csv')
+        subject_labels.to_csv(f'./data/_EXTRACTED_FEATURES/{split}/{name}_labels.csv')
 
-        os.makedirs("./data/_EXTRACTED_FEATURES/", exist_ok=True)
-        subject_features.to_csv(f'./data/_EXTRACTED_FEATURES/{name}_subject_features.csv')
-        subject_labels.to_csv(f'./data/_EXTRACTED_FEATURES/{name}_subject_labels.csv')
-
-        # return (subject_features, subject_labels, subject_names, time)
+        return (subject_features, subject_labels, name, time)
 
     with ThreadPoolExecutor() as exe: 
         subjects_data = list(exe.map(helper, dataset))
 
-    #     # unzip subjects data and unpack
-    #     subjects_features, subjects_labels, subjects_names, time = zip(*subjects_data)
+        # unzip subjects data and unpack
+        subjects_features, subjects_labels, subjects_names, time = zip(*subjects_data)
     
-    # return subjects_features, subjects_labels, subjects_names, time
+    return subjects_features, subjects_labels, subjects_names, time

@@ -468,20 +468,25 @@ if __name__ == "__main__":
     # features, there will be no need to concurrently load audios and labels
     if args.config == "trad":
         data_loader_kwargs = {
-            "dataset": "train",
+            "dataset": None,
+            "split": "train",
             "config": args.config
         }
 
         # load dataframes
         train_subjects_features, train_subjects_labels, _ = concur_load_data(**data_loader_kwargs)
-        print(train_subjects_labels["0"].value_counts())
+
+        # concatenate both train  lists of
+        # signal and label numpy arrays into a single 
+        # combined training dataset
+        X = np.concatenate(train_subjects_features, axis=0)
+        Y_sparse = np.concatenate(train_subjects_labels, axis=0)
+        unique = np.unique(Y_sparse)
+
+        print(np.unique(Y_sparse, return_counts=True))
         
         # provide n_features kwarg to be used by softmax or any other ml model
-        hyper_param_config["n_features"] = train_subjects_features.shape[1]
-
-        X = train_subjects_features.to_numpy()
-        Y_sparse = train_subjects_labels["0"].to_numpy()
-        unique = np.unique(Y_sparse)
+        hyper_param_config["n_features"] = X.shape[1]
 
         # set value of n_units hyper param
         hyper_param_config["n_units"] = len(unique)
@@ -513,6 +518,7 @@ if __name__ == "__main__":
 
         data_loader_kwargs = {
             "dataset": train_dataset,
+            "split": "train",
             "hertz": hyper_param_config["hertz"],
             "window_time": hyper_param_config["window_time"], 
             "hop_time": hyper_param_config["hop_time"], 
@@ -521,7 +527,6 @@ if __name__ == "__main__":
 
         # load training data concurrently
         train_subjects_signals, train_subjects_labels, times  = concur_load_data(**data_loader_kwargs)
-        print(train_subjects_signals[0].shape)
 
         # concatenate both train  lists of
         # signal and label numpy arrays into a single 
@@ -593,23 +598,23 @@ if __name__ == "__main__":
 
     elif args.mode.lower() == "training":
         
-        # # we can just modify this script such that it doesn't loop through hyper param configs anymore and
-        # # will just only now 1. load the preprocessed features, load the reduced feature set, 
-        # # exclude use of grid serach loso cv, loso cross validation, and leave one subject out
-        # # and instead use the best hyper param config obtained from summarization.ipynb and train the model
-        # # not on a specific fold or set of subjects but all subjects
-        # train_final_estimator(
-        #     X,
-        #     Y, 
-        #     alpha=args.learning_rate,
-        #     opt=models[args.model]['opt'],
-        #     loss=models[args.model]['loss'],
-        #     metrics=models[args.model]['metrics'],
-        #     threshold_epochs=args.threshold_epochs,
-        #     training_epochs=args.training_epochs,
-        #     batch_size=args.batch_size,
-        #     estimator_name=args.model,
-        #     estimator=models[args.model]['model'],
-        #     hyper_param_config=hyper_param_config
-        # )
+        # we can just modify this script such that it doesn't loop through hyper param configs anymore and
+        # will just only now 1. load the preprocessed features, load the reduced feature set, 
+        # exclude use of grid serach loso cv, loso cross validation, and leave one subject out
+        # and instead use the best hyper param config obtained from summarization.ipynb and train the model
+        # not on a specific fold or set of subjects but all subjects
+        train_final_estimator(
+            X,
+            Y, 
+            alpha=args.learning_rate,
+            opt=models[args.model]['opt'],
+            loss=models[args.model]['loss'],
+            metrics=models[args.model]['metrics'],
+            threshold_epochs=args.threshold_epochs,
+            training_epochs=args.training_epochs,
+            batch_size=args.batch_size,
+            estimator_name=args.model,
+            estimator=models[args.model]['model'],
+            hyper_param_config=hyper_param_config
+        )
         pass

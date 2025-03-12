@@ -15,3 +15,4 @@
 * `python tuning_dl.py -m lstm -c deep -lr 1e-3 --batch_size 256 --mode training --hyper_param_list hertz_8000 window_time_0.25 hop_time_0.125 n_a_128 dense_drop_prob_0.2 rnn_drop_prob_0.2` - this is if number of subjects is 100
 
 * commands for softmax regression model: `python tuning_dl.py -m softmax -c trad -lr 1e-3 --batch_size 32 --mode training --hyper_param_list hertz_8000 window_time_0.25 hop_time_0.125`
+* `python tuning_dl.py -m softmax -c trad -lr 1e-3 --batch_size 256 --mode training --hyper_param_list hertz_8000 window_time_0.25 hop_time_0.125` better than using batch size of 1024 and 512
