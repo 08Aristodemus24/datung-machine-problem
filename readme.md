@@ -113,8 +113,12 @@ some preset commands we can already use:
 - `python tuning_dl.py -m lstm -c deep -lr 1e-3 --batch_size 256 --mode training --hyper_param_list hertz_8000 window_time_0.25 hop_time_0.125 n_a_128 dense_drop_prob_0.2 rnn_drop_prob_0.2` to train a sequential LSTM neural network model\
 - `python tuning_dl.py -m softmax -c trad -lr 1e-3 --batch_size 256 --mode training --hyper_param_list hertz_8000 window_time_0.25 hop_time_0.125` to train a softmax regression model which will use the engineered features we have
 
-14. screenshot of extracted features: ![alt text](<Screenshot 2025-03-12 140242.png>)
-15. screenshot of labels: ![alt text](<Screenshot 2025-03-12 140300.png>)
+14. screenshot of extracted features: 
+![alt text](<Screenshot 2025-03-12 140242.png>)
+![alt text](<Screenshot 2025-03-12 143231.png>)
+15. screenshot of labels: 
+![alt text](<Screenshot 2025-03-12 140300.png>)
+![alt text](<Screenshot 2025-03-12 143241.png>)
 
 ## To implement/fix:
 1. testing/evaluation script to use saved model weights to see overall test performance of model
