@@ -377,6 +377,7 @@ def train_final_estimator(X,
 
     # save hyper params and other attributes of model 
     # for later model loading
+    os.makedirs('./saved/misc/', exist_ok=True)
     save_meta_data(f'./saved/misc/{estimator_name}_meta_data.json', hyper_param_config)
 
     # begin training final model, without validation data
@@ -391,6 +392,10 @@ def train_final_estimator(X,
     # one subject so model can pull knowledge from more training subjects 
     validation_split=0.2,
     verbose=1,)
+
+    os.makedirs(f"./results/", exist_ok=True)
+    print(history.history)
+    save_meta_data(f"./results/{estimator_name}_history.json", history.history)
 
 def create_hyper_param_config(hyper_param_list: list[str]):
     """

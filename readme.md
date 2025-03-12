@@ -113,9 +113,13 @@ some preset commands we can already use:
 - `python tuning_dl.py -m lstm -c deep -lr 1e-3 --batch_size 256 --mode training --hyper_param_list hertz_8000 window_time_0.25 hop_time_0.125 n_a_128 dense_drop_prob_0.2 rnn_drop_prob_0.2` to train a sequential LSTM neural network model\
 - `python tuning_dl.py -m softmax -c trad -lr 1e-3 --batch_size 256 --mode training --hyper_param_list hertz_8000 window_time_0.25 hop_time_0.125` to train a softmax regression model which will use the engineered features we have
 
+14. screenshot of extracted features: ![alt text](<Screenshot 2025-03-12 140242.png>)
+15. screenshot of labels: ![alt text](<Screenshot 2025-03-12 140300.png>)
+
 ## To implement/fix:
 1. testing/evaluation script to use saved model weights to see overall test performance of model
 2. there seems to be something wrong as the models seem to have loss go up during training and auc go down, which signifies the model may be underfitting, or not generalizing well on the training set. This may be because there aren't enough examples for the other class for the model to learn from and learns that the audio signals are mostly male voices, which we know in the dataset outweighs by large margin the female labeled audio recordings. Solution could be to gather more female recordings, and extract more features from it. Another less viable option is to undersample the male class so that it is equal to the amount of female audio signal inputs
 3. hyper parameter tuning to determine more viable hyper parameters for each model
 4. learn and try tensorflow decision forest models and see if if will be better than a typical softmax regression model
 5. learn more about audio signal processing as I still don't know how to better extract features from audio signals without me fully understanding concepts like mel spectrograms, spectral centroids, etc.
+6. solving why f1 score seems to bee a numpy array instead of a single value: https://stackoverflow.com/questions/68596302/f1-score-metric-per-class-in-tensorflow
